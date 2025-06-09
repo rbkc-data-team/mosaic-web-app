@@ -7,7 +7,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  azureSubscription: '9c8ca605-244a-40fc-9e70-7e2dacaa822c'
+  azureSubscription: 'RBKC-SBOX-LZ-UKBP'
   appName: 'mosaic-assist'
   resourceGroup: 'mosaic-rg'
   packagePath: 'backend'
