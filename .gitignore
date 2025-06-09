@@ -21,3 +21,6 @@ venv.bak/
 # evalutation
 evalutation_logs/
 
+# backend
+backend/
+
