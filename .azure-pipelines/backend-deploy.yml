@@ -1,0 +1,26 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: '9c8ca605-244a-40fc-9e70-7e2dacaa822c'
+  appName: 'mosaic-assist'
+  resourceGroup: 'mosaic-rg'
+  packagePath: 'backend'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.10'
+
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: '$(azureSubscription)'
+    appName: '$(appName)'
+    package: '$(packagePath)'
+    runtimeStack: 'PYTHON|3.10'
+    startupCommand: './startup.sh'
