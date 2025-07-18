@@ -6,6 +6,7 @@ import time
 import time
 import os
 from dotenv import load_dotenv
+from datetime import date  
  
 # Load environment variables
 load_dotenv()
@@ -13,9 +14,6 @@ load_dotenv()
 # Get the API URL from environment variable or use default
 #API_URL = os.getenv("API_URL", "http://localhost:8000")
 API_URL = "https://mosaic-assist.azurewebsites.net"
-
-#print(f"API URL environment variable: {os.getenv('API_URL')}")
-#print(f"Using API url: {API_URL}")
 
 # Configure the page
 st.set_page_config(
@@ -62,6 +60,9 @@ st.header("Chat with Data")
 # Configure the sidebar for search functionalities
 st.sidebar.header("Search Options")
 
+# Sidebar filter for LoadDate  
+load_date_after = st.sidebar.date_input("Load Date After (Filter)", value=None)  
+
 # Add vector store cleanup button to sidebar
 if st.sidebar.button("Clean Up Vector Store", key="cleanup_button"):
     try:
@@ -83,10 +84,8 @@ st.sidebar.subheader("Search by Person ID")
 
 person_id = st.sidebar.text_input(
      "Enter Person ID",
-     key="person_id_input",
-     placeholder="Type ID and press Enter"
+     value = None, step=1, placeholder=15
  )
-#person_id = int(person_id)
 
 # Add new person ID to recent queries if it's not empty and not already in the list
 if person_id and person_id not in st.session_state.recent_person_queries:
