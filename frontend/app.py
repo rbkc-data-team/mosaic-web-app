@@ -3,7 +3,6 @@ import requests
 import json
 import re
 import time
-import time
 import os
 from dotenv import load_dotenv
 from datetime import date  
@@ -52,6 +51,9 @@ if "active_citation" not in st.session_state:
     st.session_state.active_citation = None
 if "selected_citation" not in st.session_state:
     st.session_state.selected_citation = None
+# set up container to hold user query and llm response for chat history injection (avoiding citations)
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
  
 
 # Chat Section
@@ -86,6 +88,11 @@ person_id = st.sidebar.text_input(
      "Enter Person ID",
      value = None, step=1, placeholder=15
  )
+
+# Store person_id in session state
+if person_id == 0:    # ensure that no valid integer is passed through to the evaluation module if no value is entered by user
+    person_id = None 
+st.session_state.person_id = person_id
 
 # Add new person ID to recent queries if it's not empty and not already in the list
 if person_id and person_id not in st.session_state.recent_person_queries:
@@ -127,9 +134,13 @@ st.sidebar.subheader("Search by Group ID")
 
 group_id = st.sidebar.text_input(
      "Enter Group ID",
-     key="group_id_input",
-     placeholder="Type ID and press Enter"
+     value = None, step=1, placeholder=131
  )
+
+# Store group_id in session state
+if group_id == 0: # ensure that no valid integer is passed through to the evaluation module if no value is entered by user
+    group_id = None
+st.session_state.group_id = group_id
 
 # Add new group ID to recent queries if it's not empty and not already in the list
 if group_id and group_id not in st.session_state.recent_group_queries:
@@ -198,6 +209,7 @@ def create_citation_link(citation):
 if prompt := st.chat_input("Ask a question about the data"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.chat_history.append({"role": "user", "content": prompt})
     
     # Query the vector index for relevant context using our enhanced retrieval
     with st.spinner("Retrieving relevant information..."):
@@ -297,9 +309,11 @@ if prompt := st.chat_input("Ask a question about the data"):
                 f"like this: [1], [2], etc. MAKE SURE to include these citations for every piece of information you use from the documents.\n\n"
                 f"If the answer is in the context, provide it with as much relevant detail as possible. "
                 f"If you cannot find the answer or reasonably infer it from the context, "
+                f"Also included, if they exhist, are previous chat messages.  You can use these for additional context if needed."
                 f"say 'I don't have that specific information in the records available to me.'\n\n"
                 f"**DO NOT** provide social care advice OR advice on next steps OR subsequent actions."
                 f"CONTEXT INFORMATION:\n{context}\n\n"
+                f"CHAT HISTORY (past 3 chats):\n{st.session_state.chat_history[-7:-1]}\n\n" 
                 f"USER QUESTION: {prompt}\n\n"
                 f"ANSWER (with citations in square brackets):"
             )
@@ -309,7 +323,15 @@ if prompt := st.chat_input("Ask a question about the data"):
                 try:
                     response = requests.post(
                          f"{API_URL}/chat/with_context",
-                        json={"prompt": full_prompt}
+                        json={
+                            "prompt": full_prompt,
+                            "query": prompt,
+                            "context": context,
+                            "person_id": person_id,
+                            "group_id": group_id,
+                            "sources": sources,
+                            "len_docs": len(documents)
+                        }
                     )
                     response.raise_for_status()
                     result = response.json()
@@ -350,9 +372,17 @@ if prompt := st.chat_input("Ask a question about the data"):
                         "content": response_text,
                         "citations": citations
                     }
-                    
+
+                    chat_hist = {
+                        "role": "assistant", 
+                        "content": response_text
+                    }
+
                     # Add the message to session state
                     st.session_state.messages.append(new_message)
+
+                    # add just assistant response for chat history
+                    st.session_state.chat_history.append(chat_hist)
                     
                     # Store sources for this response
                     st.session_state.sources[len(st.session_state.messages) - 1] = sources
@@ -425,6 +455,68 @@ if st.session_state.current_citations:
             )
 else:
     st.sidebar.info("No references available for the current response.")
+
+# Add evaluation summary in sidebar
+st.sidebar.markdown("---")
+st.sidebar.subheader("Evaluation Summary")
+if st.sidebar.button("Refresh Evaluation Summary"):
+    try:
+        response = requests.post(f"{API_URL}/evaluation_summary")
+        response.raise_for_status()
+        summary = response.json()
+        
+        st.sidebar.metric("Total Evaluations", summary["total_evaluations"])
+        
+        avg_metrics = summary["average_metrics"]
+        st.sidebar.markdown("### Average Metrics (higher score is better)")
+      
+        st.sidebar.metric(
+            "Avg. F1 Score", 
+            f"{avg_metrics['F1_score']:.2f}",
+            help="The F1-score computes the ratio of the number of shared words between the model generation and the ground truth. Ratio is computed over the individual words in the generated response against those in the ground truth answer. The number of shared words between the generation and the truth is the basis of the F1 score: precision is the ratio of the number of shared words to the total number of words in the generation, and recall is the ratio of the number of shared words to the total number of words in the ground truth."
+        )
+        st.sidebar.metric(
+            "Avg. Groundedness", 
+            f"{avg_metrics['Groundedness']:.2f}",
+            help="The groundedness measure assesses the correspondence between claims in an AI-generated answer and the source context, making sure that these claims are substantiated by the context. Scored 1-5"
+        )
+        st.sidebar.metric(
+            "Avg. Similarity", 
+            f"{avg_metrics['Similarity']:.2f}",
+            help="Evaluates similarity score for a given query, response, and ground truth. Scored 1-5"
+        )
+        st.sidebar.metric(
+            "Avg. Retrieval", 
+            f"{avg_metrics['Retrieval']:.2f}",
+            help="The retrieval measure assesses the AI system's performance in retrieving informatiom for additional context (e.g. a RAG scenario). Retrieval scores range from 1 to 5, with 1 being the worst and 5 being the best."
+        )
+        st.sidebar.metric(
+            "Avg. Citation Accuracy", 
+            f"{avg_metrics['citation_accuracy']:.2f}",
+            help="Average accuracy of source citations (1 = 100%)"
+        )
+        st.sidebar.metric(
+            "Avg. Response Relevance (TFIDF)", 
+            f"{avg_metrics['relevance_score (TF-IDF)']:.2f}",
+            help="Average relevance of responses to queries using term frequency - inverse document frequency"
+        )
+        st.sidebar.metric(
+            "Avg. Response Relevance (from LLM)", 
+            f"{avg_metrics['llm_relevance']:.2f}",
+            help="Average relevance of responses to queries - using LLM as a judge"
+        )
+        st.sidebar.metric(
+            "Avg. Completeness Score", 
+            f"{avg_metrics['completeness_score']:.2f}",
+            help="Average completeness of responses"
+        )
+        st.sidebar.metric(
+            "Avg. METEOR Score", 
+            f"{avg_metrics['METEOR_score']:.2f}",
+            help="Measures the similarity by shared n-grams between the generated text and the ground truth, similar to the BLEU score, focusing on precision and recall. "
+        )
+    except requests.exceptions.RequestException as e:
+        st.sidebar.error(f"Error fetching evaluation summary: {str(e)}")
 
 # Chat input with clear chat button
 if "messages" in st.session_state and len(st.session_state.messages) > 0:
