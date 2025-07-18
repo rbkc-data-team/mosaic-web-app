@@ -10,7 +10,7 @@ def run_sql_queries(person_key: int) -> List[Tuple[str, pd.DataFrame]]:
     """Run all SQL queries for a person and return results as DataFrames"""
     conn = create_sql_connection()
     queries = {
-        "demo_query": """SELECT 
+         "demo_query": """SELECT 
             MosaicICSPersonDetails.Fullname, MosaicICSPersonAddresses.AddressType, MosaicICSPersonAddresses.FlatNumber, MosaicICSPersonAddresses.Building, 
             MosaicICSPersonAddresses.StreetNumber, MosaicICSPersonAddresses.Street, MosaicICSPersonAddresses.PostcodeKey, MosaicICSRelatedPersonDetails.Fullname as RelatedPerson_Name, 
             MosaicICSRelatedPersonDetails.PersonID, MosaicICSPersonDetails.Restricted

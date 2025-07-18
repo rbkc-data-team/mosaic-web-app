@@ -68,6 +68,3 @@ def close_connection(conn):
         conn.close()
     except Exception as e:
         print(f"Error closing connection: {e}") 
-
-# conn = create_sql_connection(use_local=True)
-# print(conn)

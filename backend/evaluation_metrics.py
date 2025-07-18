@@ -31,10 +31,6 @@ model_config = {
     "azure_deployment": AZURE_OPENAI_DEPLOYMENT,
 }
 
-# these are to get around SSL CERT issues on local pc
-os.environ['REQUESTS_CA_BUNDLE'] = r"C:\Users\CGSIAHA\AppData\Local\.certifi\cacert.pem" 
-os.environ['SSL_CERT_FILE'] = r"C:\Users\CGSIAHA\AppData\Local\.certifi\cacert.pem" 
-
 class EvaluationMetrics:
     def __init__(self, log_dir: str = "evaluation_logs"):
         self.log_dir = log_dir
@@ -153,7 +149,8 @@ class EvaluationMetrics:
                 "claims dictionary": claims_dict,
                 "context dictionary": context_dict
             }
-            self._log_evaluation(evaluation_results)
+            #############################Need to define where this gets logged to in web app########################################
+            #self._log_evaluation(evaluation_results)
             
             self.metrics_history.append(metrics)
             return {"metrics": metrics}

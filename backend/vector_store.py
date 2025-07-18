@@ -79,10 +79,7 @@ def create_qdrant_store(collection_name="vector_store"):
 def create_vector_index(documents, vector_store, embed_model):
     """Create vector index from documents"""
     print(f"Creating vector index with {len(documents)} documents")
-    
-    # Debug document content
-    print(f"Sample document: {documents[0].get_content()[:100]}...")
-    
+        
     # Create storage context
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     
@@ -133,13 +130,13 @@ def create_chat_engine(llm, collection_name="vector_store"):
     )
     
     # Create memory and chat engine
-    memory = ChatMemoryBuffer.from_defaults(token_limit=5000)
+    memory = ChatMemoryBuffer.from_defaults()
     
     chat_engine = index.as_chat_engine(
         chat_mode="condense_plus_context",
         memory=memory,
         verbose=True,
-        similarity_top_k=20,
+        similarity_top_k=15,
         vector_store_query_mode="hybrid"
     )
     return chat_engine
