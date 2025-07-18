@@ -22,6 +22,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import re
 import numpy as np
 from collections import Counter
+from evaluation_metrics import EvaluationMetrics
 
 # Load environment variables
 load_dotenv()
@@ -30,13 +31,15 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://mosaic-assist.azurewebsites.net/", "https://localhost:8501", "https://localhost:8000","https://127.0.0.1:8501","ttps://127.0.0.1:8000"], 
+    allow_origins=["https://mosaic-assist.azurewebsites.net/", "https://localhost:8501"], 
     allow_credentials=True,
     allow_methods=["GET","POST","DELETE","OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"]
 )
 
+# Initialize evaluation metrics
+evaluator = EvaluationMetrics()
 
 # Create routers
 main_router = APIRouter()
@@ -44,7 +47,7 @@ person_router = APIRouter(prefix="/person", tags=["person"])
 group_router = APIRouter(prefix="/group", tags=["group"])
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 vector_router = APIRouter(prefix="/vector", tags=["vector"])
-
+eval_router = APIRouter(prefix = "/eval_summary", tags=["eval"])
 
 # Models for request validation
 class PersonRequest(BaseModel):
@@ -58,10 +61,16 @@ class ChatRequest(BaseModel):
 
 class VectorQueryRequest(BaseModel):
     query: str
-    top_k: int = 20
+    top_k: int = 15
 
 class ContextQueryRequest(BaseModel):
     prompt: str
+    query: str
+    context: str
+    person_id: Optional[int] = None
+    group_id: Optional[int] = None
+    sources: dict
+    len_docs: int
 
 # Helper functions for advanced retrieval
 def preprocess_query(query: str) -> str:
@@ -126,7 +135,12 @@ def calculate_keyword_similarity(query: str, documents: List[str]) -> List[float
 def rerank_results(semantic_scores: List[float], keyword_scores: List[float], 
                    documents: List[str], alpha: float = 0.7) -> List[tuple]:
     """
-    Rerank results using a weighted combination of semantic and keyword scores
+    Rerank results using a weighted combination of semantic and keyword scores.
+
+    semantic_score: Measures how conceptually similar a document is to the query (using embeddings & cosine similarity).
+    keyword_score: Measures how many exact or partial keyword matches exist between the document and the query.
+    alpha: A weight between 0 and 1 that controls the influence of each score. If alpha = 1.0: Only semantic scores are used, If alpha = 0.0: Only keyword scores are used.
+        - If alpha = 0.7 (default): 70% of the final score comes from semantic similarity, and 30% from keyword matching.
     """
     if not documents:
         return []
@@ -362,9 +376,7 @@ async def query_vector_index(request: VectorQueryRequest, llm_and_embed=Depends(
                 retrieval_nodes = retriever.retrieve(expanded_query)
                 
                 if retrieval_nodes:
-                    print(f"\n{'='*50}")
                     print(f"Retrieved {len(retrieval_nodes)} nodes from person_store")
-                    print(f"{'='*50}\n")
                     for i, node in enumerate(retrieval_nodes):
                         doc_text = node.get_content()
                         score = getattr(node, 'score', 1.0)
@@ -399,15 +411,13 @@ async def query_vector_index(request: VectorQueryRequest, llm_and_embed=Depends(
                 retriever = VectorStoreIndex.from_vector_store(
                     vector_store,
                     embed_model=embed_model
-                ).as_retriever(similarity_top_k=30)  # Set higher k for more results
+                ).as_retriever(similarity_top_k=15)  # Set higher k for more results
                 
                 # Query directly with retriever for more control
                 retrieval_nodes = retriever.retrieve(expanded_query)
                 
                 if retrieval_nodes:
-                    print(f"\n{'='*50}")
                     print(f"Retrieved {len(retrieval_nodes)} nodes from group_store")
-                    print(f"{'='*50}\n")
                     for i, node in enumerate(retrieval_nodes):
                         doc_text = node.get_content()
                         score = getattr(node, 'score', 1.0) # this is the cosine similarity score from within the vector store
@@ -466,6 +476,50 @@ async def query_vector_index(request: VectorQueryRequest, llm_and_embed=Depends(
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error querying vector index: {str(e)}")
 
+async def get_documents(person_id: Optional[int] = None, group_id: Optional[int] = None, format: str = "text") -> Union[str, List[Dict]]:
+    """
+    Get documents for a person or group.
+    
+    Args:
+        person_id: The person ID if available
+        group_id: The group ID if available
+        format: The return format - either "text" (concatenated string) or "dict" (list of document dictionaries)
+        
+    Returns:
+        Either a string of concatenated document contents or a list of document dictionaries
+    """
+    try:
+        if person_id is not None:
+            print(f"Retrieving documents for person_id: {person_id}")
+            documents, is_restricted, message = get_person_documents(person_id)
+        elif group_id is not None:
+            print(f"Retrieving documents for group_id: {group_id}")
+            documents, is_restricted, message = get_group_documents(group_id)
+        else:
+            return "No ID provided" if format == "text" else []
+            
+        if is_restricted:
+            return "Record is restricted" if format == "text" else []
+        if not documents:
+            return "No documents found" if format == "text" else []
+            
+        if format == "text":
+            return "\n".join([doc.get_content() for doc in documents])
+        else:
+            return [
+                {
+                    "text": doc.get_content(),
+                    "id_tag": doc.metadata.get('id', ''),
+                    "metadata": doc.metadata
+                }
+                for doc in documents
+            ]
+            
+    except Exception as e:
+        print(f"Error retrieving documents: {e}")
+        return "Error retrieving documents" if format == "text" else []
+
+
 @chat_router.post("/with_context")
 async def chat_with_context(request: ContextQueryRequest, llm_and_embed=Depends(get_llm_and_embed_model)):
     try:
@@ -473,11 +527,78 @@ async def chat_with_context(request: ContextQueryRequest, llm_and_embed=Depends(
         
         # Use the prompt directly with the context already included
         response = llm.complete(request.prompt)
+        response_text = str(response)
 
-        return {"response": str(response)}
+        # Get ground truth and relevant documents using the same function 
+        ground_truth = await get_documents(
+            person_id=request.person_id,
+            group_id=request.group_id,
+            format="text"
+        )
+        relevant_docs = await get_documents(
+            person_id=request.person_id,
+            group_id=request.group_id,
+            format="dict"
+        )
+        
+        # Process citations and add them to the message
+        citations = []
+        used_citation_ids = set()
+        sources = request.sources # sources is retrieved context in dictionary with these keys: text, type, id, id_tag, excerpt
+        #print("\nSources: ",sources)
+        len_docs = request.len_docs
+
+        try:
+            # Check for citation patterns like [1], [2], etc. in the response
+            citation_pattern = r'\[(\d+)\]'
+            all_citations = re.findall(citation_pattern, response_text)
+            
+            # Convert to integers and remove duplicates by using a set
+            unique_citations = set(map(int, all_citations))
+            
+            print(f"Found citations: {unique_citations}")
+            
+            # Add all cited sources to the citations list
+            for citation_id in unique_citations:
+                if citation_id <= len_docs and citation_id in sources:  # Ensure the citation ID is valid
+                    used_citation_ids.add(citation_id)
+                    # Copy the source metadata to the citation
+                    citations.append(sources[citation_id])
+            
+            # Sort citations by ID for consistent presentation
+            citations.sort(key=lambda x: x["id"])
+        except Exception as e:
+            print(f"Error processing citations: {str(e)}")
+            # Fallback method implemented if needed
+
+        # Evaluate the response using the new metrics
+        evaluation_results = evaluator.evaluate_response(
+            sources = request.sources,
+            citations= list(unique_citations),
+            query_context = request.context,
+            user_query = request.query,
+            prompt=request.prompt, #full prompt with system message and attached context
+            response=response_text,
+            retrieved_docs=relevant_docs,
+            ground_truth=ground_truth
+        )
+        
+        return {
+            "response": response_text,
+            "evaluation": evaluation_results
+        }
     except Exception as e:
         print(f"Error in chat_with_context: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
+
+@eval_router.post("/eval_summary")
+async def get_evaluation_summary():
+    """Get summary of all evaluation metrics"""
+    try:
+        summary = evaluator.get_evaluation_summary()
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting evaluation summary: {str(e)}")
 
 # Include all routers in the main app
 app.include_router(main_router)
@@ -485,6 +606,7 @@ app.include_router(person_router)
 app.include_router(group_router)
 app.include_router(chat_router)
 app.include_router(vector_router)
+app.include_router(eval_router)
 
 # Shutdown event handler
 @app.on_event("shutdown")
