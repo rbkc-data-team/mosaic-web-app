@@ -84,7 +84,7 @@ if st.sidebar.button("Clean Up Vector Store", key="cleanup_button"):
 # Person Search in Sidebar
 st.sidebar.subheader("Search by Person ID")
 
-person_id = st.sidebar.text_input(
+person_id = st.sidebar.number_input(
      "Enter Person ID",
      value = None, step=1, placeholder=15
  )
@@ -132,7 +132,7 @@ if st.sidebar.button("Process Person Data") or (person_id and st.session_state.g
 # Group Search in Sidebar
 st.sidebar.subheader("Search by Group ID")
 
-group_id = st.sidebar.text_input(
+group_id = st.sidebar.number_input(
      "Enter Group ID",
      value = None, step=1, placeholder=131
  )
