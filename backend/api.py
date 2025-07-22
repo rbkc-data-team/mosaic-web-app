@@ -370,7 +370,7 @@ async def query_vector_index(request: VectorQueryRequest, llm_and_embed=Depends(
                 retriever = VectorStoreIndex.from_vector_store(
                     vector_store,
                     embed_model=embed_model
-                ).as_retriever(similarity_top_k=30)  # Set higher k for more results
+                ).as_retriever(similarity_top_k=15)  # Set higher k for more results
                 
                 # Query directly with retriever for more control
                 retrieval_nodes = retriever.retrieve(expanded_query)
