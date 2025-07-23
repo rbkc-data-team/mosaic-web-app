@@ -1,5 +1,5 @@
 #!/bin/bash
-uvicorn backend/api:app --host 0.0.0.0 --port 8000
+uvicorn backend.api:app --host 0.0.0.0 --port 8000
 # gunicorn backend.api:app --bind 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker
 
 
