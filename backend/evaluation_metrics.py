@@ -22,9 +22,12 @@ from datetime import datetime
 import json
 import os
 from promptflow.core import AzureOpenAIModelConfiguration
+from azure.storage.blob import BlobServiceClient  
 from config import (
     AZURE_OPENAI_ENDPOINT,
-    AZURE_OPENAI_DEPLOYMENT,)
+    AZURE_OPENAI_DEPLOYMENT,
+    AZURE_BLOB_STORAGE_CONTAINER,
+    AZURE_BLOB_STORAGE)
 
 model_config = {
     "azure_endpoint": AZURE_OPENAI_ENDPOINT,
@@ -36,6 +39,14 @@ class EvaluationMetrics:
         self.log_dir = log_dir
         os.makedirs(log_dir, exist_ok=True)
         self.metrics_history = []
+        self.blob_connection_string = AZURE_BLOB_STORAGE  
+        self.blob_container_name = AZURE_BLOB_STORAGE_CONTAINER  
+  
+        if not self.blob_connection_string:  
+            raise ValueError("Azure Blob Storage connection string is not set in environment variables.")  
+  
+        self.blob_service_client = BlobServiceClient.from_connection_string(self.blob_connection_string)  
+        self.container_client = self.blob_service_client.get_container_client(self.blob_container_name)
         
     def evaluate_response(self, sources: dict, citations: list, query_context: str,user_query: str, prompt: str, response: str, retrieved_docs: Dict, ground_truth: str) -> Dict:
         """
@@ -150,7 +161,7 @@ class EvaluationMetrics:
                 "context dictionary": context_dict
             }
             #############################Need to define where this gets logged to in web app########################################
-            #self._log_evaluation(evaluation_results)
+            self._log_evaluation(evaluation_results)
             
             self.metrics_history.append(metrics)
             return {"metrics": metrics}
@@ -298,14 +309,28 @@ class EvaluationMetrics:
     
     def _log_evaluation(self, evaluation_results: Dict[str, Any]):
         """Log evaluation results to a JSON file"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = os.path.join(self.log_dir, f"evaluation_{timestamp}.json")
+        # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # log_file = os.path.join(self.log_dir, f"evaluation_{timestamp}.json")
         
-        try:
-            with open(log_file, 'w') as f:
-                json.dump(evaluation_results, f, indent=2)
-        except Exception as e:
-            print(f"Error logging evaluation results: {e}")
+        # try:
+        #     with open(log_file, 'w') as f:
+        #         json.dump(evaluation_results, f, indent=2)
+        # except Exception as e:
+        #     print(f"Error logging evaluation results: {e}")
+        
+        # Serialize evaluation results to JSON  
+        evaluation_json = json.dumps(evaluation_results, indent=2)  
+  
+        # Create a blob name with a timestamp  
+        timestamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')  
+        blob_name = f"evaluation_{timestamp}.json"  
+  
+        try:  
+            # Upload the JSON string as a blob to the container  
+            self.container_client.upload_blob(name=blob_name, data=evaluation_json, overwrite=True)  
+            print(f"Evaluation log uploaded to blob: {blob_name}")  
+        except Exception as e:  
+            print(f"Failed to upload evaluation log to blob storage: {e}")   
 
 # this probably will only work properly if we have human created ground truth answers to compare against
     def _get_documentf1_score(self, claims: List[str], facts: List[str]) -> float:

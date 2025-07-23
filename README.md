@@ -38,6 +38,7 @@ A cloud-native web application for querying and chatting with data about vulnera
 - Ensure proper access controls on SQL Server
 - Use appropriate Azure RBAC roles
 - Automatic detection and prevention of restricted record processing
+- Writes evaluation metrics to blob storage
 
 ---
 

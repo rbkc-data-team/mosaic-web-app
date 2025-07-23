@@ -13,6 +13,7 @@ llama-index-vector-stores-qdrant==0.4
 qdrant-client==1.12.2
 azure-identity==1.15.0
 azure-keyvault-secrets==4.7.0
+azure-storage-blob
 pyodbc==5.0.1
 python-multipart==0.0.9 
 gunicorn == 21.2.0
