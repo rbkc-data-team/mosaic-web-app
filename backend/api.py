@@ -31,7 +31,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://mosaic-assist.azurewebsites.net/", "https://localhost:8501"], 
+    allow_origins=["rbkc-nrpd-mosaic-frontend-ui.azurewebsites.net","rbkc-nrpd-mosaic-frontend-ui.azurewebsites.net/" ,"https://localhost:8501"], 
     allow_credentials=True,
     allow_methods=["GET","POST","DELETE","OPTIONS"],
     allow_headers=["*"],
@@ -214,7 +214,7 @@ async def streamlit_app(request: Request):
     # get the host URL
     base_url = str(request.base_url).rstrip('/')
     
-    streamlit_url = f"https://mosaic-assist.azurewebsites.net"
+    streamlit_url = f"rbkc-nrpd-mosaic-frontend-ui.azurewebsites.net"
 
     # Return a simple HTML page that embeds the Streamlit iframe
     return HTMLResponse(f"""
