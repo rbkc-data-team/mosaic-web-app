@@ -12,7 +12,7 @@ load_dotenv()
 
 # Get the API URL from environment variable or use default
 #API_URL = os.getenv("API_URL", "http://localhost:8000")
-API_URL = "https://mosaic-assist.azurewebsites.net"
+API_URL = os.getenv("BACKEND_URL")
 
 # Configure the page
 st.set_page_config(
