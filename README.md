@@ -109,6 +109,7 @@ SQL_CONNECTION_STRING=<your_sql_server_connection_string>
    - Check application logs in Azure Portal
    - Verify all environment variables are set correctly
    - Ensure Python version matches requirements
+   - check startup.sh and ensure that this startup command is provided in the Azure Web App configuration menu
 
 2. Database connection issues:
    - Verify SQL Server firewall rules
