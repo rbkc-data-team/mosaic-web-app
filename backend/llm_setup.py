@@ -3,7 +3,7 @@ from llama_index.llms.azure_openai import AzureOpenAI
 from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
 from llama_index.core import Settings
 from azure.identity import DefaultAzureCredential
-from config import (
+from backend.config import (
     AZURE_OPENAI_ENDPOINT,
     AZURE_OPENAI_DEPLOYMENT,
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT,

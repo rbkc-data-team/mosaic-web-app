@@ -23,7 +23,7 @@ import json
 import os
 from promptflow.core import AzureOpenAIModelConfiguration
 from azure.storage.blob import BlobServiceClient  
-from config import (
+from backend.config import (
     AZURE_OPENAI_ENDPOINT,
     AZURE_OPENAI_DEPLOYMENT,
     AZURE_BLOB_STORAGE_CONTAINER,
@@ -317,7 +317,7 @@ class EvaluationMetrics:
         #         json.dump(evaluation_results, f, indent=2)
         # except Exception as e:
         #     print(f"Error logging evaluation results: {e}")
-        
+
         # Serialize evaluation results to JSON  
         evaluation_json = json.dumps(evaluation_results, indent=2)  
   

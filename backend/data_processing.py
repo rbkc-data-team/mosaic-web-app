@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import pandas as pd
 from llama_index.core.schema import Document
-from database import create_sql_connection, execute_query, close_connection
+from backend.database import create_sql_connection, execute_query, close_connection
 from llama_index.core.node_parser import SentenceSplitter
 from fastapi import HTTPException
 import tiktoken

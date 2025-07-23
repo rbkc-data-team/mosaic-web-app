@@ -13,16 +13,16 @@ from typing import List, Dict, Any, Optional
 import uvicorn
 from dotenv import load_dotenv
 import time
-from data_processing import get_person_documents, get_group_documents, run_sql_queries
-from vector_store import create_qdrant_store, create_vector_index, create_chat_engine, cleanup_vector_store, check_collection_status, get_qdrant_client
-from llm_setup import setup_llama_index
+from backend.data_processing import get_person_documents, get_group_documents, run_sql_queries
+from backend.vector_store import create_qdrant_store, create_vector_index, create_chat_engine, cleanup_vector_store, check_collection_status, get_qdrant_client
+from backend.llm_setup import setup_llama_index
 from llama_index.core import VectorStoreIndex
 from llama_index.core.storage.storage_context import StorageContext
 from sklearn.feature_extraction.text import TfidfVectorizer
 import re
 import numpy as np
 from collections import Counter
-from evaluation_metrics import EvaluationMetrics
+from backend.evaluation_metrics import EvaluationMetrics
 
 # Load environment variables
 load_dotenv()
