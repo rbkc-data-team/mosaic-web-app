@@ -25,3 +25,7 @@ evalutation_logs/
 #frontend
 frontend/
 
+#certs
+wcccrootca.cer
+*.cer
+*.crt
