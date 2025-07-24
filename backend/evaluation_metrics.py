@@ -27,7 +27,8 @@ from backend.config import (
     AZURE_OPENAI_ENDPOINT,
     AZURE_OPENAI_DEPLOYMENT,
     AZURE_BLOB_STORAGE_CONTAINER,
-    AZURE_BLOB_STORAGE)
+    AZURE_BLOB_STORAGE,
+    AZURE_BLOB_STORAGE_CONNECTION_STRING)
 
 model_config = {
     "azure_endpoint": AZURE_OPENAI_ENDPOINT,
@@ -39,7 +40,7 @@ class EvaluationMetrics:
         self.log_dir = log_dir
         os.makedirs(log_dir, exist_ok=True)
         self.metrics_history = []
-        self.blob_connection_string = AZURE_BLOB_STORAGE  
+        self.blob_connection_string = AZURE_BLOB_STORAGE_CONNECTION_STRING  
         self.blob_container_name = AZURE_BLOB_STORAGE_CONTAINER  
   
         if not self.blob_connection_string:  
