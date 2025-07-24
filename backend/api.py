@@ -2,14 +2,13 @@ from fastapi import FastAPI, HTTPException, Depends, Request, Body, APIRouter
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import streamlit as st
 import streamlit.web.bootstrap as bootstrap
 import threading
 import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 import uvicorn
 from dotenv import load_dotenv
 import time
