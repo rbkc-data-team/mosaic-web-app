@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copy CA cert to trusted store  
-cp /home/site/wwwroot/wccrootca.crt /usr/local/share/ca-certificates/wccrootca.crt 
+cp /home/site/wwwroot/rbkcrootca.cer /usr/local/share/ca-certificates/rbkcroot.cer 
 cp /home/site/wwwroot/wccrootca.cer /usr/local/share/ca-certificates/wccrootca.cer 
   
 # Update CA certificates store  
