@@ -3,7 +3,7 @@ from llama_index.llms.azure_openai import AzureOpenAI
 from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
 from llama_index.core import Settings
 from azure.identity import DefaultAzureCredential
-from config import (
+from backend.config import (
     AZURE_OPENAI_ENDPOINT,
     AZURE_OPENAI_DEPLOYMENT,
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
@@ -16,7 +16,7 @@ def setup_llama_index():
     # Get Azure token
     credential = DefaultAzureCredential()
     access_token = credential.get_token("https://cognitiveservices.azure.com/.default").token
-    #print("======================Access Token: ",access_token)
+    
     
     # Configure LLM
     llm = AzureOpenAI(
@@ -25,7 +25,7 @@ def setup_llama_index():
         api_base=AZURE_OPENAI_ENDPOINT,
         api_version=AZURE_OPENAI_VERSION,
         api_key=access_token,
-        http_client=httpx.Client(verify=False), # need this to run from work laptop
+    
     )
     
     # Configure embedding model
@@ -35,7 +35,6 @@ def setup_llama_index():
         api_base=AZURE_OPENAI_ENDPOINT,
         api_version=AZURE_OPENAI_VERSION,
         api_key=access_token,
-        http_client=httpx.Client(verify=False),
     )
     
     # Set global settings

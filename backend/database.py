@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, URL
 import pandas as pd
-from config import SQL_CONNECTION_STRING, SQL_CONNECTION_LOCAL
+from backend.config import SQL_CONNECTION_STRING, SQL_CONNECTION_LOCAL
 
 def create_sql_connection(use_local = False): # use local databse or WCC datawarehouse
     """Creates connection to SQL data warehouse"""
@@ -68,6 +68,3 @@ def close_connection(conn):
         conn.close()
     except Exception as e:
         print(f"Error closing connection: {e}") 
-
-# conn = create_sql_connection(use_local=True)
-# print(conn)

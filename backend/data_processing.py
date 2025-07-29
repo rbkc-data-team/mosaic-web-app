@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import pandas as pd
 from llama_index.core.schema import Document
-from database import create_sql_connection, execute_query, close_connection
+from backend.database import create_sql_connection, execute_query, close_connection
 from llama_index.core.node_parser import SentenceSplitter
 from fastapi import HTTPException
 import tiktoken
@@ -10,7 +10,7 @@ def run_sql_queries(person_key: int) -> List[Tuple[str, pd.DataFrame]]:
     """Run all SQL queries for a person and return results as DataFrames"""
     conn = create_sql_connection()
     queries = {
-        "demo_query": """SELECT 
+         "demo_query": """SELECT 
             MosaicICSPersonDetails.Fullname, MosaicICSPersonAddresses.AddressType, MosaicICSPersonAddresses.FlatNumber, MosaicICSPersonAddresses.Building, 
             MosaicICSPersonAddresses.StreetNumber, MosaicICSPersonAddresses.Street, MosaicICSPersonAddresses.PostcodeKey, MosaicICSRelatedPersonDetails.Fullname as RelatedPerson_Name, 
             MosaicICSRelatedPersonDetails.PersonID, MosaicICSPersonDetails.Restricted
