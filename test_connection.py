@@ -4,6 +4,10 @@ import pandas as pd
 import urllib
 
 def create_sql_connection(connection_string):
+    """Function to test SQL connection through SSH/Bash terminal in advanced settings for Azure Web App backend.
+    
+    python test_connection.py ""Driver={ODBC Driver 18 for SQL Server};Server=[server];DATABASE=[database];UID=[username];PWD=[password];Encrypt=yes;""
+    """
     try:
         # URL encode the connection string
         connection_string_encoded = urllib.parse.quote_plus(connection_string)
